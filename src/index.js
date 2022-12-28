@@ -1,17 +1,106 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React, { useState } from "react";
+import { render } from "react-dom";
+import { storage } from "./firebase/index";
+import PermMediaOutlinedIcon from '@mui/icons-material/PermMediaOutlined';
+import "./App.css";
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import DownloadIcon from '@mui/icons-material/Download';
+const ReactFirebaseFileUpload = () => {
+  const [images, setImages] = useState([]);
+  const [urls, setUrls] = useState([]);
+  const [progress, setProgress] = useState(0);
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+  const handleChange = (e) => {
+    for (let i = 0; i < e.target.files.length; i++) {
+      const newImage = e.target.files[i];
+      newImage["id"] = Math.random();
+      setImages((prevState) => [...prevState, newImage]);
+    }
+  };
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+  const handleUpload = () => {
+    const promises = [];
+    images.map((image) => {
+      const uploadTask = storage.ref(`images/${image.name}`).put(image);
+      promises.push(uploadTask);
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress = Math.round(
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+          );
+          setProgress(progress);
+        },
+        (error) => {
+          console.log(error);
+        },
+        async () => {
+          await storage
+            .ref("images")
+            .child(image.name)
+            .getDownloadURL()
+            .then((urls) => {
+              setUrls((prevState) => [...prevState, urls]);
+            });
+        }
+      );
+    });
+
+    Promise.all(promises)
+      // .then(() => alert("All images uploaded"))
+      .catch((err) => console.log(err));
+  };
+
+  console.log("images: ", images);
+  console.log("urls", urls);
+
+  return (
+    <div>
+       <div className='background'>
+    <div className="title">
+     <div className='header'>
+     <PermMediaOutlinedIcon  className="gallery"style={{ color: "white" }}/>
+     <h1>My Gallery</h1>
+     </div>
+      <h2>Your Pictures</h2>
+      <p>Inspirational designs, illustrations, and graphic elements from the world’s best designers.</p>
+    </div>
+    </div>
+      <progress className="progress"value={progress} max="100" />
+      <br />
+      <br />
+      <form>
+        <label>
+          <input type="file" multiple onChange={handleChange} />     
+          <AddPhotoAlternateIcon
+            style={{ color: "#1a73e8" }}
+          ></AddPhotoAlternateIcon>
+
+        </label>
+        <DownloadIcon className="downloadicon" onClick={handleUpload}   style={{ color: "#1a73e8" }}/>
+      </form>
+     
+      <br />
+      {/* {urls.map((url, i) => (
+        <div key={i}>
+          <a href={url} target="_blank">
+            {url}
+          </a>
+        </div>
+      ))}
+      <br /> */}
+      {urls.map((url, i) => (
+       
+        <img
+          key={i}
+          style={{ width: "300px" ,height:"300px",padding:"30px",marginLeft:"80px"}}
+          src={url || "http://via.placeholder.com/300"}
+          alt="firebase-image"
+        />
+       
+      ))}
+    </div>
+  );
+};
+
+render(<ReactFirebaseFileUpload />, document.querySelector("#root"));
