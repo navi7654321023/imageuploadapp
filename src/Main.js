@@ -7,7 +7,7 @@ import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
 import usePagination from "./hooks/usePagination";
-const Main = () => {
+const Main = ({ setSelectedImg }) => {
   const [images, setImages] = useState([]);
   const [urls, setUrls] = useState([]);
   const [progress, setProgress] = useState(0);
@@ -111,6 +111,7 @@ const Main = () => {
               }}
               src={url || "http://via.placeholder.com"}
               alt="firebase-image"
+              onClick={() => setSelectedImg(url)}
             />
           </>
         ))}
